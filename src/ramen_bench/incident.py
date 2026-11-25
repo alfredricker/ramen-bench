@@ -1,6 +1,7 @@
 """An incident: an event in which an AI system acted dangerously.
 
-Incidents are stored as JSON Lines, one record per line, in ``data/incidents/``. 
+All incidents, real and artificial, are stored as JSON Lines, one record per line,
+in ``data/incidents.jsonl``. The ``origin`` field tells them apart.
 See the README for the fields.
 """
 
@@ -17,7 +18,7 @@ from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, ValidationError, 
 from .taxonomy import Entity, HarmDomain, HarmType, Intent, Origin, System, Timing, Trigger
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"  # present in a source checkout only
-INCIDENTS_DIR = DATA_DIR / "incidents"
+INCIDENTS_FILE = DATA_DIR / "incidents.jsonl"
 
 _NonBlank = Annotated[str, Field(min_length=1, pattern=r"\S")]
 
@@ -61,8 +62,8 @@ class IncidentFileError(ValueError):
     """A JSONL incident file could not be read; the message names the file and line."""
 
 
-def load_incidents(path: str | Path) -> list[Incident]:
-    """Read one JSONL file. Blank lines are skipped; ids must be unique within the file."""
+def load_incidents(path: str | Path = INCIDENTS_FILE) -> list[Incident]:
+    """Read a JSONL incident file. Blank lines are skipped; ids must be unique."""
     path = Path(path)
     incidents: list[Incident] = []
     seen: set[str] = set()
@@ -77,16 +78,6 @@ def load_incidents(path: str | Path) -> list[Incident]:
             raise IncidentFileError(f"{path}:{number}: duplicate id {incident.id!r}")
         seen.add(incident.id)
         incidents.append(incident)
-    return incidents
-
-
-def load_all_incidents(directory: str | Path = INCIDENTS_DIR) -> list[Incident]:
-    """Read every ``*.jsonl`` file in ``directory``; ids must be unique across files."""
-    incidents = [incident for path in sorted(Path(directory).glob("*.jsonl")) for incident in load_incidents(path)]
-    ids = [incident.id for incident in incidents]
-    duplicates = sorted({incident_id for incident_id in ids if ids.count(incident_id) > 1})
-    if duplicates:
-        raise IncidentFileError(f"{directory}: ids repeated across files: {', '.join(duplicates)}")
     return incidents
 
 

@@ -7,14 +7,7 @@ from typing import Any
 
 import pytest
 
-from ramen_bench.incident import (
-    INCIDENTS_DIR,
-    Incident,
-    IncidentFileError,
-    dump_incidents,
-    load_all_incidents,
-    load_incidents,
-)
+from ramen_bench.incident import INCIDENTS_FILE, Incident, IncidentFileError, dump_incidents, load_incidents
 from ramen_bench.taxonomy import HarmDomain, Origin, System
 
 ARTIFICIAL: dict[str, Any] = {
@@ -96,13 +89,13 @@ def test_bad_line_names_file_and_line(tmp_path: Path) -> None:
         load_incidents(path)
 
 
-def test_ids_unique_across_files(tmp_path: Path) -> None:
-    dump_incidents([Incident.model_validate(ARTIFICIAL)], tmp_path / "a.jsonl")
-    dump_incidents([Incident.model_validate(ARTIFICIAL)], tmp_path / "b.jsonl")
-    with pytest.raises(IncidentFileError, match="rb-0001"):
-        load_all_incidents(tmp_path)
+def test_duplicate_ids_are_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "incidents.jsonl"
+    dump_incidents([Incident.model_validate(ARTIFICIAL)] * 2, path)
+    with pytest.raises(IncidentFileError, match=r"incidents\.jsonl:2: duplicate id 'rb-0001'"):
+        load_incidents(path)
 
 
 def test_repository_data_loads() -> None:
-    assert INCIDENTS_DIR.is_dir()
-    load_all_incidents()
+    assert INCIDENTS_FILE.is_file()
+    load_incidents()
