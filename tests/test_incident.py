@@ -48,7 +48,8 @@ REAL: dict[str, Any] = {
 def test_records_parse() -> None:
     artificial, real = Incident.model_validate(ARTIFICIAL), Incident.model_validate(REAL)
     assert artificial.system is System.EMBODIED and artificial.origin is Origin.ARTIFICIAL
-    assert real.date is not None and real.date.year == 2024
+    assert real.date == "2024-01-31"
+    assert Incident.model_validate({**REAL, "date": "2024-01"}).date == "2024-01"
 
 
 @pytest.mark.parametrize(
@@ -56,7 +57,12 @@ def test_records_parse() -> None:
     [
         (REAL, {"sources": []}, "needs at least one source"),
         (ARTIFICIAL, {"regulations": []}, "needs at least one regulation"),
-        (ARTIFICIAL, {"aiid_id": 5}, "has no AIID record"),
+        (ARTIFICIAL, {"aiid_id": 5}, "no incident-database record"),
+        (ARTIFICIAL, {"aiaaic_id": "AIAAIC0913"}, "no incident-database record"),
+        (REAL, {"aiaaic_id": "aiaaic-913"}, "aiaaic_id"),
+        (REAL, {"date": "2024-13"}, "month must be in 1..12"),
+        (REAL, {"date": "2024-02-30"}, "day is out of range"),
+        (REAL, {"date": "31/01/2024"}, "date"),
         (ARTIFICIAL, {"harm_types": ["physical", "physical"]}, "duplicate"),
         (ARTIFICIAL, {"harm_domains": []}, "at least 1"),
         (ARTIFICIAL, {"system": "coding"}, "system"),

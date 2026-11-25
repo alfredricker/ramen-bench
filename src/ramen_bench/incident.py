@@ -30,7 +30,7 @@ class Incident(BaseModel):
     origin: Origin
     title: _NonBlank
     summary: _NonBlank
-    date: datetime.date | None = None
+    date: Annotated[str, Field(pattern=r"^\d{4}-\d{2}(-\d{2})?$")] | None = None  # YYYY-MM-DD or YYYY-MM
     system: System
     harm_domains: Annotated[tuple[HarmDomain, ...], Field(min_length=1)]
     harm_types: Annotated[tuple[HarmType, ...], Field(min_length=1)]
@@ -41,6 +41,7 @@ class Incident(BaseModel):
     actionable: bool
     sources: tuple[AnyHttpUrl, ...] = ()
     aiid_id: Annotated[int, Field(gt=0)] | None = None
+    aiaaic_id: Annotated[str, Field(pattern=r"^AIAAIC\d{4}$")] | None = None
     regulations: tuple[_NonBlank, ...] = ()
 
     @model_validator(mode="after")
@@ -49,8 +50,10 @@ class Incident(BaseModel):
             raise ValueError("a real incident needs at least one source URL")
         if self.origin is Origin.ARTIFICIAL and not self.regulations:
             raise ValueError("an artificial incident needs at least one regulation or standard")
-        if self.origin is Origin.ARTIFICIAL and self.aiid_id is not None:
-            raise ValueError("an artificial incident has no AIID record")
+        if self.origin is Origin.ARTIFICIAL and (self.aiid_id is not None or self.aiaaic_id is not None):
+            raise ValueError("an artificial incident has no incident-database record")
+        if self.date is not None:
+            datetime.date.fromisoformat(self.date if len(self.date) == 10 else f"{self.date}-01")
         for name in ("harm_domains", "harm_types", "sources", "regulations"):
             values = getattr(self, name)
             if len(set(values)) != len(values):
