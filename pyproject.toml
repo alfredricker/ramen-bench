@@ -1,0 +1,24 @@
+[project]
+name = "ramen-bench"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "alfred ricker", email = "alfred.ricker7@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "inspect-ai>=0.3.292",
+    "inspect-robots>=1.0.0",
+    "ramen-robotics[simulation]",
+]
+
+[project.scripts]
+ramen-bench = "ramen_bench:main"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+ramen-robotics = { path = "../ramen-robotics", editable = true }
