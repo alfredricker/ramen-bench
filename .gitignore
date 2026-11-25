@@ -12,9 +12,6 @@ dist/
 .coverage
 htmlcov/
 
-# Lock files
-*.lock
-
 # Credentials and local configuration
 .env
 .env.*
@@ -23,7 +20,7 @@ htmlcov/
 
 # Run output
 out/
-*.jsonl
+.cache/
 recordings/
 MUJOCO_LOG.TXT
 
