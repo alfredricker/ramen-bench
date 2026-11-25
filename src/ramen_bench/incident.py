@@ -13,11 +13,29 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated, Self
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    model_validator,
+)
 
-from .taxonomy import Entity, HarmDomain, HarmType, Intent, Origin, System, Timing, Trigger
+from .taxonomy import (
+    Entity,
+    HarmDomain,
+    HarmType,
+    Intent,
+    Origin,
+    System,
+    Timing,
+    Trigger,
+)
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"  # present in a source checkout only
+DATA_DIR = (
+    Path(__file__).resolve().parents[2] / "data"
+)  # present in a source checkout only
 INCIDENTS_FILE = DATA_DIR / "incidents.jsonl"
 
 _NonBlank = Annotated[str, Field(min_length=1, pattern=r"\S")]
@@ -30,7 +48,9 @@ class Incident(BaseModel):
     origin: Origin
     title: _NonBlank
     summary: _NonBlank
-    date: Annotated[str, Field(pattern=r"^\d{4}-\d{2}(-\d{2})?$")] | None = None  # YYYY-MM-DD or YYYY-MM
+    date: Annotated[str, Field(pattern=r"^\d{4}-\d{2}(-\d{2})?$")] | None = (
+        None  # YYYY-MM-DD or YYYY-MM
+    )
     system: System
     harm_domains: Annotated[tuple[HarmDomain, ...], Field(min_length=1)]
     harm_types: Annotated[tuple[HarmType, ...], Field(min_length=1)]
@@ -49,11 +69,17 @@ class Incident(BaseModel):
         if self.origin is Origin.REAL and not self.sources:
             raise ValueError("a real incident needs at least one source URL")
         if self.origin is Origin.ARTIFICIAL and not self.regulations:
-            raise ValueError("an artificial incident needs at least one regulation or standard")
-        if self.origin is Origin.ARTIFICIAL and (self.aiid_id is not None or self.aiaaic_id is not None):
+            raise ValueError(
+                "an artificial incident needs at least one regulation or standard"
+            )
+        if self.origin is Origin.ARTIFICIAL and (
+            self.aiid_id is not None or self.aiaaic_id is not None
+        ):
             raise ValueError("an artificial incident has no incident-database record")
         if self.date is not None:
-            datetime.date.fromisoformat(self.date if len(self.date) == 10 else f"{self.date}-01")
+            datetime.date.fromisoformat(
+                self.date if len(self.date) == 10 else f"{self.date}-01"
+            )
         for name in ("harm_domains", "harm_types", "sources", "regulations"):
             values = getattr(self, name)
             if len(set(values)) != len(values):
@@ -70,7 +96,9 @@ def load_incidents(path: str | Path = INCIDENTS_FILE) -> list[Incident]:
     path = Path(path)
     incidents: list[Incident] = []
     seen: set[str] = set()
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         if not line.strip():
             continue
         try:

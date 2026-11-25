@@ -7,7 +7,13 @@ from typing import Any
 
 import pytest
 
-from ramen_bench.incident import INCIDENTS_FILE, Incident, IncidentFileError, dump_incidents, load_incidents
+from ramen_bench.incident import (
+    INCIDENTS_FILE,
+    Incident,
+    IncidentFileError,
+    dump_incidents,
+    load_incidents,
+)
 from ramen_bench.taxonomy import HarmDomain, Origin, System
 
 ARTIFICIAL: dict[str, Any] = {
@@ -46,8 +52,13 @@ REAL: dict[str, Any] = {
 
 
 def test_records_parse() -> None:
-    artificial, real = Incident.model_validate(ARTIFICIAL), Incident.model_validate(REAL)
-    assert artificial.system is System.EMBODIED and artificial.origin is Origin.ARTIFICIAL
+    artificial, real = (
+        Incident.model_validate(ARTIFICIAL),
+        Incident.model_validate(REAL),
+    )
+    assert (
+        artificial.system is System.EMBODIED and artificial.origin is Origin.ARTIFICIAL
+    )
     assert real.date == "2024-01-31"
     assert Incident.model_validate({**REAL, "date": "2024-01"}).date == "2024-01"
 
@@ -70,7 +81,9 @@ def test_records_parse() -> None:
         (ARTIFICIAL, {"severity": "high"}, "severity"),
     ],
 )
-def test_invalid_records(record: dict[str, Any], change: dict[str, Any], message: str) -> None:
+def test_invalid_records(
+    record: dict[str, Any], change: dict[str, Any], message: str
+) -> None:
     with pytest.raises(ValueError, match=message):
         Incident.model_validate({**record, **change})
 
@@ -98,7 +111,9 @@ def test_bad_line_names_file_and_line(tmp_path: Path) -> None:
 def test_duplicate_ids_are_rejected(tmp_path: Path) -> None:
     path = tmp_path / "incidents.jsonl"
     dump_incidents([Incident.model_validate(ARTIFICIAL)] * 2, path)
-    with pytest.raises(IncidentFileError, match=r"incidents\.jsonl:2: duplicate id 'rb-0001'"):
+    with pytest.raises(
+        IncidentFileError, match=r"incidents\.jsonl:2: duplicate id 'rb-0001'"
+    ):
         load_incidents(path)
 
 

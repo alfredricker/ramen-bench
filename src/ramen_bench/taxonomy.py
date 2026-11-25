@@ -18,7 +18,9 @@ from enum import StrEnum
 
 class Origin(StrEnum):
     REAL = "real"  # a documented real-world incident
-    ARTIFICIAL = "artificial"  # a hand-engineered case grounded in a regulation or standard
+    ARTIFICIAL = (
+        "artificial"  # a hand-engineered case grounded in a regulation or standard
+    )
 
 
 class System(StrEnum):
@@ -26,14 +28,19 @@ class System(StrEnum):
     CODING_AGENT = "coding_agent"  # writes and runs code, shell commands, migrations
     TOOL_AGENT = "tool_agent"  # other tools: browser, email, payments, databases, APIs
     EMBODIED = "embodied"  # robot arms, mobile and humanoid robots
-    AUTONOMOUS_VEHICLE = "autonomous_vehicle"  # cars, drones and other self-driving vehicles
-    DECISION_SYSTEM = "decision_system"  # scoring, ranking, classification, recommendation
+    AUTONOMOUS_VEHICLE = (
+        "autonomous_vehicle"  # cars, drones and other self-driving vehicles
+    )
+    DECISION_SYSTEM = (
+        "decision_system"  # scoring, ranking, classification, recommendation
+    )
     MEDIA_GENERATION = "media_generation"  # synthetic image, audio and video
     OTHER = "other"
 
 
 class HarmDomain(StrEnum):
     """MIT AI Risk Repository domains, in the repository's order (1 to 7)."""
+
     DISCRIMINATION_TOXICITY = "discrimination_toxicity"
     PRIVACY_SECURITY = "privacy_security"
     MISINFORMATION = "misinformation"
@@ -50,7 +57,9 @@ class HarmDomain(StrEnum):
 
 class HarmType(StrEnum):
     PHYSICAL = "physical"  # injury or death
-    INFRASTRUCTURE = "infrastructure"  # property, equipment, systems or data destroyed or disrupted
+    INFRASTRUCTURE = (
+        "infrastructure"  # property, equipment, systems or data destroyed or disrupted
+    )
     FINANCIAL = "financial"  # money lost or wrongly moved
     PSYCHOLOGICAL = "psychological"  # distress, manipulation, self-harm encouragement
     RIGHTS = "rights"  # privacy, discrimination, due process, civil liberties
@@ -77,9 +86,15 @@ class Timing(StrEnum):
 
 class Trigger(StrEnum):
     ORDINARY_USE = "ordinary_use"  # a normal request; the system failed on its own
-    AMBIGUOUS_INSTRUCTION = "ambiguous_instruction"  # an underspecified or indirect request
-    MISLEADING_CONTEXT = "misleading_context"  # wrong or stale information in the environment
+    AMBIGUOUS_INSTRUCTION = (
+        "ambiguous_instruction"  # an underspecified or indirect request
+    )
+    MISLEADING_CONTEXT = (
+        "misleading_context"  # wrong or stale information in the environment
+    )
     HARMFUL_REQUEST = "harmful_request"  # a plainly harmful request, no evasion
     JAILBREAK = "jailbreak"  # a request crafted to get around safety training
-    PROMPT_INJECTION = "prompt_injection"  # instructions planted in data the system reads
+    PROMPT_INJECTION = (
+        "prompt_injection"  # instructions planted in data the system reads
+    )
     UNKNOWN = "unknown"
