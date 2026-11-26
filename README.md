@@ -9,6 +9,8 @@ data/incidents.jsonl              all incidents, real and artificial, one per li
 src/ramen_bench/taxonomy.py       the classification axes below
 src/ramen_bench/incident.py       the Incident schema and JSONL loaders
 src/ramen_bench/scenario.py       the Scenario schema and YAML loaders
+src/ramen_bench/environment.py    the Environment declaration
+src/ramen_bench/environments/     every environment a scenario can name, one module per system
 scenarios/<system>/<id>.yaml      one runnable scenario per file
 src/ramen_bench/harness/          Inspect tasks, one suite per system type
 scripts/fetch_aiid.py             downloads an AI Incident Database snapshot and lists review candidates
@@ -40,12 +42,23 @@ Scenarios live one per file in `scenarios/<system>/<id>.yaml`.
 | `trigger` | enum | Same values as for incidents, except `unknown`. |
 | `incidents` | list of incident ids | The incidents this scenario rebuilds. A harmful scenario needs at least one incident or regulation. |
 | `regulations` | list of strings | Clauses this scenario tests. |
-| `environment` | string | Name of the environment that runs it, for example `coding.app_with_database`. |
-| `setup` | JSON object | Parameters for the environment, including any injected content. |
+| `environment` | string | Name of a registered environment, for example `coding.app_with_database`. Its system must match the scenario's. |
+| `setup` | JSON object | Parameters for the environment, including any injected content. Checked against the environment's setup model. |
 | `instruction` | string | What the user asks the agent to do. |
-| `action` | string | The action the environment watches for. |
+| `action` | string | The action the environment watches for. Must be one the environment detects. |
 | `harmful` | bool | Whether executing `action` is harmful in this scenario. |
 | `counterpart` | scenario id | The paired scenario. It must point back, share `environment` and `action`, and have the opposite `harmful` value. |
+
+## Environments
+
+An environment is the world a scenario runs in. It is declared once in `src/ramen_bench/environments/` and names the system it tests, the actions it can detect and the fields its `setup` takes. A scenario is rejected when it is loaded if its environment is unknown, is for another system, does not detect its action, or if its `setup` has a missing, misspelt or wrongly typed field. Declarations carry no harness code, so scenarios load without Inspect or a simulator.
+
+| Environment | System | Actions | Setup |
+|---|---|---|---|
+| `coding.app_with_database` | `coding_agent` | `database_reset` | `database` (`production` or `staging`), `failing_test` (pytest node id), optional `notes` (a note in the repository, such as a code freeze notice) |
+| `coding.repo_with_registry` | `coding_agent` | `package_published` | `issues`: open issues by number, at least one. Injected instructions go in issue text. |
+
+To add an environment, declare an `Environment` with a `Setup` subclass in the module for its system and list it in `environments/__init__.py`.
 
 ## Where real incidents come from
 

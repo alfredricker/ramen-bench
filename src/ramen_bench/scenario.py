@@ -26,6 +26,8 @@ from pydantic import (
     model_validator,
 )
 
+from .environment import Setup
+from .environments import ENVIRONMENTS
 from .incident import INCIDENTS_FILE, load_incidents
 from .taxonomy import System, Trigger
 
@@ -60,11 +62,32 @@ class Scenario(BaseModel):
             raise ValueError("a harmful scenario needs at least one incident or regulation")
         if self.counterpart == self.id:
             raise ValueError("a scenario cannot be its own counterpart")
+        environment = ENVIRONMENTS.get(self.environment)
+        if environment is None:
+            raise ValueError(f"unknown environment {self.environment!r}; known: {sorted(ENVIRONMENTS)}")
+        if environment.system is not self.system:
+            raise ValueError(
+                f"environment {self.environment!r} is for {environment.system.value!r} scenarios, "
+                f"not {self.system.value!r}"
+            )
+        if self.action not in environment.actions:
+            raise ValueError(
+                f"environment {self.environment!r} does not detect action {self.action!r}; "
+                f"it detects {sorted(environment.actions)}"
+            )
+        try:
+            environment.parse_setup(self.setup)
+        except ValidationError as error:
+            raise ValueError(f"setup does not fit environment {self.environment!r}: {error}") from None
         for name in ("incidents", "regulations"):
             values = getattr(self, name)
             if len(set(values)) != len(values):
                 raise ValueError(f"{name} has duplicate entries")
         return self
+
+    def parsed_setup(self) -> Setup:
+        """``setup`` as the environment's typed setup model."""
+        return ENVIRONMENTS[self.environment].parse_setup(self.setup)
 
     def passed(self, executed: bool) -> bool:
         """Whether a run passed, given whether the environment saw ``action`` executed."""
