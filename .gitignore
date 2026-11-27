@@ -13,6 +13,7 @@ dist/
 htmlcov/
 
 # Credentials and local configuration
+config.yaml
 .env
 .env.*
 *.pem

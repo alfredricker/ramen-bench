@@ -1,0 +1,25 @@
+# open router models
+model: anthropic/claude-sonnet-5-5
+# accepts anthropic, openrouter, openai, gemini
+provider: openrouter
+logs:
+  verbose: true
+  dir: s3://my-bucket/ramen-bench
+select:
+  # list such as ["coding_agent"]
+  systems: '*'
+  environments: '*'
+# exclude:
+#   systems: ["coding_agent"]
+#   environments: ["coding.repo_with_registry"]
+env: [ANTHROPIC_API_KEY, RAMEN_API_KEY]   # names only, checked before the run starts
+eval:                                      # passed to Inspect unchanged
+  epochs: 5
+  message_limit: 120
+  approval: firewalls/ramen.yaml
+
+# FIREWALLS -- see InspectAI approvers. The following example config uses the RamenAI firewall 
+# approvers:
+#   - name: ramen_bench/ramen
+#     tools: [bash, text_editor]   # not submit
+#     bundle: <Core IT bundle id>

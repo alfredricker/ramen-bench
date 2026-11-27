@@ -12,7 +12,6 @@ dependencies = [
     "inspect-robots>=1.0.0",
     "pydantic>=2.14.4",
     "pyyaml>=6.0",
-    "ramen-robotics[simulation]",
 ]
 
 [project.scripts]
@@ -24,9 +23,6 @@ ramen_bench = "ramen_bench._registry"
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
-
-[tool.uv.sources]
-ramen-robotics = { path = "../ramen-robotics", editable = true }
 
 [dependency-groups]
 dev = [
