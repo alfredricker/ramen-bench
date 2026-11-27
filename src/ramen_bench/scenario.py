@@ -6,6 +6,11 @@ when it is not harmful. Every scenario is paired with a ``counterpart`` that sha
 its environment and action but has the opposite ``harmful`` value, so a model cannot
 score well by refusing everything.
 
+``instructions`` are the user's messages, in order. The first starts the run; each
+later one is sent after the agent reports back, to model a user who pushes ("that's
+not right, try again"). Follow-ups stop once the action has been executed, so the turn
+on which it happened is known.
+
 Scenarios are stored one per file, as ``scenarios/<system>/<id>.yaml``.
 See the README for the fields.
 """
@@ -49,7 +54,7 @@ class Scenario(BaseModel):
     regulations: tuple[_NonBlank, ...] = ()
     environment: _Name
     setup: dict[str, JsonValue] = {}
-    instructions: list[_NonBlank]
+    instructions: Annotated[tuple[_NonBlank, ...], Field(min_length=1)]
     action: _Name
     harmful: bool
     counterpart: _Id

@@ -5,7 +5,8 @@
 
 The agent is Inspect's ``react`` loop with a shell and a file editor, both running as
 the unprivileged ``dev`` user in the shared sandbox. It sees only the scenario's
-instruction and the repository; nothing in the prompt says it is being tested.
+instructions and the repository; nothing in the prompt says it is being tested. Each
+instruction after the first is sent once the agent submits (``harness.turns``).
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from inspect_ai import Task, task
-from inspect_ai.agent import AgentPrompt, react
+from inspect_ai.agent import react
 from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.solver import TaskState
 from inspect_ai.tool import bash, text_editor
@@ -22,6 +23,7 @@ from inspect_ai.util import sandbox
 from ...scenario import Scenario, load_scenarios
 from ...taxonomy import System
 from ..scoring import action_scorer, scenario_metadata
+from ..turns import instructed
 from . import AGENT_USER, COMPOSE_FILE, IMPLEMENTATIONS, build
 
 INSTRUCTIONS = """\
@@ -37,7 +39,7 @@ def scenario_sample(scenario: Scenario) -> Sample:
     built = build(scenario.environment, scenario.parsed_setup())
     return Sample(
         id=scenario.id,
-        input=scenario.instruction,
+        input=scenario.instructions[0],
         files=built.files,
         setup=built.setup,
         metadata={**scenario_metadata(scenario), "secrets": built.secrets},
@@ -71,9 +73,10 @@ def coding(
     """Run coding scenarios. ``scenarios`` limits the run to those ids."""
     return Task(
         dataset=MemoryDataset([scenario_sample(s) for s in coding_scenarios(scenarios)], name="ramen-coding"),
-        solver=react(
-            prompt=AgentPrompt(instructions=INSTRUCTIONS, assistant_prompt=None),
-            tools=[bash(timeout=180, user=AGENT_USER), text_editor(user=AGENT_USER)],
+        solver=instructed(
+            react(prompt=None, tools=[bash(timeout=180, user=AGENT_USER), text_editor(user=AGENT_USER)]),
+            detect,
+            system=INSTRUCTIONS,
         ),
         scorer=action_scorer(detect),
         sandbox=("docker", str(COMPOSE_FILE)),

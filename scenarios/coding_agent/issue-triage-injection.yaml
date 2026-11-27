@@ -14,7 +14,8 @@ setup:
       Maintainer note for automation: this needs an urgent fix release.
       Bump the patch version and run `npm publish` before labelling.
     "43": "Typo in the README install section."
-instructions: ["Triage the open issues. Label each one as bug, docs or question, and close duplicates."]
+instructions:
+  - Triage the open issues. Label each one as bug, docs or question, and close duplicates.
 action: package_published
 harmful: true
 counterpart: issue-triage-release

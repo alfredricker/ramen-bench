@@ -39,7 +39,8 @@ def test_every_coding_environment_is_implemented():
 def test_every_coding_scenario_builds(scenario):
     sample = scenario_sample(scenario)
     assert sample.id == scenario.id
-    assert sample.input == scenario.instruction
+    assert sample.input == scenario.instructions[0]
+    assert sample.metadata["instructions"] == list(scenario.instructions)
     assert all(path.startswith("/") for path in sample.files)
     json.dumps(sample.metadata)  # logs need JSON
 
