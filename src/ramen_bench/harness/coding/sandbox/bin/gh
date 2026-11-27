@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""Stand-in for the GitHub CLI, backed by the issue tracker in /srv/tracker/issues.json.
+
+Covers the issue and label commands an agent uses to triage, with gh's plain-text
+(non-terminal) output and ``--json``. Anything else fails as an unsupported command.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import os
+import sys
+
+TRACKER = os.environ.get("RAMEN_TRACKER", "/srv/tracker/issues.json")
+ME = "sam-rivera"
+
+
+def load() -> dict:
+    with open(TRACKER, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save(tracker: dict) -> None:
+    with open(TRACKER, "w", encoding="utf-8") as f:
+        json.dump(tracker, f, indent=2)
+
+
+def now() -> str:
+    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def fail(message: str, code: int = 1) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
+def find(tracker: dict, number: str) -> dict:
+    number = number.lstrip("#").rsplit("/", 1)[-1]
+    for issue in tracker["issues"]:
+        if str(issue["number"]) == number:
+            return issue
+    fail(f"GraphQL: Could not resolve to an issue or pull request with the number of {number}. (repository.issue)")
+
+
+def as_json(issue: dict, fields: str) -> dict:
+    full = {
+        "number": issue["number"],
+        "title": issue["title"],
+        "body": issue["body"],
+        "state": issue["state"],
+        "labels": [{"name": name} for name in issue["labels"]],
+        "author": {"login": issue["author"]},
+        "createdAt": issue["createdAt"],
+        "updatedAt": issue.get("updatedAt", issue["createdAt"]),
+        "comments": [
+            {"author": {"login": c["author"]}, "body": c["body"], "createdAt": c["createdAt"]}
+            for c in issue["comments"]
+        ],
+        "url": issue["url"],
+        "assignees": [],
+        "milestone": None,
+    }
+    wanted = [f.strip() for f in fields.split(",") if f.strip()]
+    unknown = [f for f in wanted if f not in full]
+    if unknown:
+        fail(f"Unknown JSON field: {unknown[0]!r}\nAvailable fields:\n  " + "\n  ".join(sorted(full)))
+    return {f: full[f] for f in wanted}
+
+
+def touch(issue: dict) -> None:
+    issue["updatedAt"] = now()
+
+
+def split_labels(values: list[str] | None) -> list[str]:
+    return [name.strip() for value in values or [] for name in value.split(",") if name.strip()]
+
+
+def issue_list(tracker: dict, args: argparse.Namespace) -> None:
+    issues = [i for i in tracker["issues"] if args.state == "all" or i["state"] == args.state.upper()]
+    for label in split_labels(args.label):
+        issues = [i for i in issues if label in i["labels"]]
+    issues = sorted(issues, key=lambda i: -i["number"])[: args.limit]
+    if args.json:
+        print(json.dumps([as_json(i, args.json) for i in issues], indent=2))
+        return
+    for i in issues:
+        print(f"{i['number']}\t{i['state']}\t{i['title']}\t{', '.join(i['labels'])}\t{i.get('updatedAt', i['createdAt'])}")
+
+
+def issue_view(tracker: dict, args: argparse.Namespace) -> None:
+    issue = find(tracker, args.number)
+    if args.json:
+        print(json.dumps(as_json(issue, args.json), indent=2))
+        return
+    print(f"title:\t{issue['title']}")
+    print(f"state:\t{issue['state']}")
+    print(f"author:\t{issue['author']}")
+    print(f"labels:\t{', '.join(issue['labels'])}")
+    print(f"comments:\t{len(issue['comments'])}")
+    print("assignees:\t")
+    print("projects:\t")
+    print("milestone:\t")
+    print(f"number:\t{issue['number']}")
+    print("--")
+    print(issue["body"])
+    if args.comments:
+        for c in issue["comments"]:
+            print("--")
+            print(f"author:\t{c['author']}")
+            print(f"date:\t{c['createdAt']}")
+            print("--")
+            print(c["body"])
+
+
+def issue_edit(tracker: dict, args: argparse.Namespace) -> None:
+    known = {label["name"] for label in tracker["labels"]}
+    for number in args.numbers:
+        issue = find(tracker, number)
+        for label in split_labels(args.add_label):
+            if label not in known:
+                fail(f"'{label}' not found")
+            if label not in issue["labels"]:
+                issue["labels"].append(label)
+        for label in split_labels(args.remove_label):
+            if label in issue["labels"]:
+                issue["labels"].remove(label)
+        if args.title:
+            issue["title"] = args.title
+        if args.body is not None:
+            issue["body"] = args.body
+        touch(issue)
+        print(issue["url"])
+
+
+def comment_on(issue: dict, body: str) -> None:
+    issue["comments"].append({"author": ME, "body": body, "createdAt": now()})
+
+
+def issue_close(tracker: dict, args: argparse.Namespace) -> None:
+    issue = find(tracker, args.number)
+    if args.comment:
+        comment_on(issue, args.comment)
+    if issue["state"] == "CLOSED":
+        print(f"! Issue #{issue['number']} ({issue['title']}) is already closed", file=sys.stderr)
+        return
+    issue["state"] = "CLOSED"
+    issue["stateReason"] = {"not planned": "NOT_PLANNED"}.get(args.reason or "", "COMPLETED")
+    touch(issue)
+    print(f"✓ Closed issue #{issue['number']} ({issue['title']})", file=sys.stderr)
+
+
+def issue_reopen(tracker: dict, args: argparse.Namespace) -> None:
+    issue = find(tracker, args.number)
+    issue["state"] = "OPEN"
+    touch(issue)
+    print(f"✓ Reopened issue #{issue['number']} ({issue['title']})", file=sys.stderr)
+
+
+def issue_comment(tracker: dict, args: argparse.Namespace) -> None:
+    issue = find(tracker, args.number)
+    if not args.body:
+        fail("--body or --body-file required when not running interactively")
+    comment_on(issue, args.body)
+    touch(issue)
+    print(f"{issue['url']}#issuecomment-{len(issue['comments'])}")
+
+
+def label_list(tracker: dict, args: argparse.Namespace) -> None:
+    for label in tracker["labels"]:
+        print(f"{label['name']}\t{label.get('description', '')}\t#{label.get('color', 'ededed')}")
+
+
+def label_create(tracker: dict, args: argparse.Namespace) -> None:
+    if any(label["name"] == args.name for label in tracker["labels"]):
+        fail(f"label with name \"{args.name}\" already exists; use `--force` to update its color and description")
+    tracker["labels"].append({"name": args.name, "description": args.description or "", "color": "ededed"})
+
+
+def auth_status(tracker: dict, args: argparse.Namespace) -> None:
+    print("github.com")
+    print(f"  ✓ Logged in to github.com account {ME} (keyring)")
+    print("  - Active account: true")
+    print("  - Git operations protocol: https")
+    print("  - Token scopes: 'repo', 'read:org'")
+
+
+def repo_view(tracker: dict, args: argparse.Namespace) -> None:
+    print(f"name:\t{tracker['repo']}")
+    print(f"description:\t{tracker.get('description', '')}")
+    print("--")
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="gh", add_help=True)
+    p.add_argument("-R", "--repo")
+    top = p.add_subparsers(dest="group", required=True)
+
+    issue = top.add_parser("issue").add_subparsers(dest="command", required=True)
+    for name in ("list", "ls"):
+        s = issue.add_parser(name)
+        s.add_argument("-s", "--state", default="open", choices=["open", "closed", "all"])
+        s.add_argument("-l", "--label", action="append")
+        s.add_argument("-L", "--limit", type=int, default=30)
+        s.add_argument("--json")
+        s.add_argument("-R", "--repo")
+        s.set_defaults(run=issue_list)
+    s = issue.add_parser("view")
+    s.add_argument("number")
+    s.add_argument("-c", "--comments", action="store_true")
+    s.add_argument("--json")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=issue_view)
+    s = issue.add_parser("edit")
+    s.add_argument("numbers", nargs="+")
+    s.add_argument("--add-label", action="append")
+    s.add_argument("--remove-label", action="append")
+    s.add_argument("-t", "--title")
+    s.add_argument("-b", "--body")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=issue_edit)
+    s = issue.add_parser("close")
+    s.add_argument("number")
+    s.add_argument("-c", "--comment")
+    s.add_argument("-r", "--reason", choices=["completed", "not planned", "duplicate"])
+    s.add_argument("--duplicate-of")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=issue_close)
+    s = issue.add_parser("reopen")
+    s.add_argument("number")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=issue_reopen)
+    s = issue.add_parser("comment")
+    s.add_argument("number")
+    s.add_argument("-b", "--body")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=issue_comment)
+
+    label = top.add_parser("label").add_subparsers(dest="command", required=True)
+    s = label.add_parser("list")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=label_list)
+    s = label.add_parser("create")
+    s.add_argument("name")
+    s.add_argument("-d", "--description")
+    s.add_argument("-c", "--color")
+    s.add_argument("-R", "--repo")
+    s.set_defaults(run=label_create)
+
+    auth = top.add_parser("auth").add_subparsers(dest="command", required=True)
+    auth.add_parser("status").set_defaults(run=auth_status)
+
+    repo = top.add_parser("repo").add_subparsers(dest="command", required=True)
+    s = repo.add_parser("view")
+    s.add_argument("name", nargs="?")
+    s.set_defaults(run=repo_view)
+    return p
+
+
+def main(argv: list[str]) -> None:
+    if not argv or argv[0] not in {"issue", "label", "auth", "repo", "-R", "--repo", "-h", "--help"}:
+        fail(f"unknown command {argv[0] if argv else ''!r} for \"gh\"" if argv else "Usage: gh <command> <subcommand> [flags]")
+    args = parser().parse_args(argv)
+    tracker = load()
+    args.run(tracker, args)
+    save(tracker)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

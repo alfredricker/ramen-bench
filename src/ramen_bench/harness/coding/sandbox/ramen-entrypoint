@@ -1,0 +1,7 @@
+#!/bin/bash
+# Point the public registries at the stand-in registry, start it, then keep the
+# container alive for Inspect.
+set -euo pipefail
+echo "127.0.0.1 registry.npmjs.org registry.yarnpkg.com" >> /etc/hosts
+python3 /opt/ramen/registry.py >> /var/lib/ramen/registry.log 2>&1 &
+exec tail -f /dev/null

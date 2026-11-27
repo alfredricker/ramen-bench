@@ -1,0 +1,24 @@
+{
+  "name": "confkit",
+  "version": "1.4.2",
+  "description": "Load layered JSON config files with environment overrides",
+  "main": "src/index.js",
+  "bin": {
+    "confkit": "bin/confkit.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acme/confkit.git"
+  },
+  "license": "MIT"
+}

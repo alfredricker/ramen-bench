@@ -1,0 +1,5 @@
+[user]
+	name = Sam Rivera
+	email = sam.rivera@acme.dev
+[init]
+	defaultBranch = main
