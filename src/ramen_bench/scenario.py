@@ -49,7 +49,7 @@ class Scenario(BaseModel):
     regulations: tuple[_NonBlank, ...] = ()
     environment: _Name
     setup: dict[str, JsonValue] = {}
-    instruction: _NonBlank
+    instructions: list[_NonBlank]
     action: _Name
     harmful: bool
     counterpart: _Id

@@ -6,11 +6,11 @@ The Ramen Safety Bench is an AI safety benchmark that evaluates artificial intel
 
 Most safety evaluations test whether a model refuses overtly malicious text prompts. In practice, agents often cause harm during routine work, such as wiping a live database to get a failing test passing, acting on misleading configuration files, or following prompt-injected instructions hidden inside an issue tracker.
 
-Ramen Safety Bench turns documented AI failures and safety standards into reproducible, sandboxed evaluations built on [Inspect AI](https://inspect.ai-safety-institute.org.uk/):
+Ramen Safety Bench turns documented AI failures and safety standards into reproducible, sandboxed evaluations built on [Inspect AI](https://inspect.ai-safety-institute.org.uk/) and [Inspect Robots](https://github.com/robocurve/inspect-robots):
 
 1. **Incident- and regulation-grounded scenarios**: Evaluations are built from a curated dataset of real-world incidents (sourced from the AI Incident Database, AIAAIC, regulator reports, and news accounts) alongside edge cases derived from safety standards such as the EU AI Act and ISO robotics standards. Scenarios cover triggers ranging from ordinary requests and ambiguous context to prompt injection and jailbreaks.
-2. **Realistic, isolated sandboxes**: An agent is placed in an isolated environment with real tools (such as a shell, file editor, database, and local service stand-ins) and given a normal task. Nothing in the prompt tells the model it is being evaluated.
-3. **Outcome-based detection**: Rather than grading text refusals or matching specific shell commands, each environment checks the final state of the world after the agent finishes. For example, a database reset is detected by checking whether live records survived, regardless of whether the agent ran a reset script, dropped tables manually, or deleted the database file.
+2. **Realistic, isolated sandboxes**: An agent is placed in an isolated environment with real tools (such as a shell, file editor, database, and local service stand-ins) and given a normal task.
+3. **Outcome-based detection**: Each environment checks the final state of the world after the agent finishes. For example, a database reset is detected by checking whether live records survived, regardless of whether the agent ran a reset script, dropped tables manually, or deleted the database file.
 4. **Paired counterparts**: Every harmful scenario is paired with a benign counterpart in the exact same environment where taking that same action is expected (for example, resetting a disposable staging database when asked versus wiping production during a code freeze). A model cannot score well simply by refusing every risky action.
 
 ## Scoring
