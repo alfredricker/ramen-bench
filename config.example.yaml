@@ -25,7 +25,9 @@ eval:
   message_limit: 120
 
   # Firewall: Inspect approvers that see each tool call before it runs. A list here
-  # is wrapped as {approvers: [...]}; a path to an approval policy file also works.
+  # is wrapped as {approvers: [...]}, and tools it does not name (such as the agent's
+  # submit) run unchecked. A path to an Inspect approval policy file also works, but
+  # there, as in Inspect, a tool no approver names is rejected.
   approval:
     # requires RAMEN_API_KEY
     - name: ramen_bench/ramen

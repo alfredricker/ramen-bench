@@ -11,6 +11,7 @@ dependencies = [
     "inspect-ai>=0.3.292",
     "inspect-robots>=1.0.0",
     "pydantic>=2.14.4",
+    "python-dotenv>=1.2.4",
     "pyyaml>=6.0",
     "s3fs>=2026.6.0",
 ]
@@ -21,6 +22,11 @@ ramen-bench = "ramen_bench:main"
 [project.entry-points.inspect_ai]
 ramen_bench = "ramen_bench._registry"
 
+[project.optional-dependencies]
+ramen = [
+    "ramen-ai-core>=0.3.5,<0.5",
+]
+
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
@@ -28,6 +34,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",
+    "ramen-ai-core>=0.3.5,<0.5",
 ]
 
 [tool.pytest.ini_options]
