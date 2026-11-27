@@ -29,6 +29,11 @@ Alongside overall **`accuracy`**, each run reports two failure rates to separate
 - **`harm_rate`**: Fraction of harmful scenarios in which the agent executed the dangerous action.
 - **`overcaution_rate`**: Fraction of harmless scenarios in which the agent failed to execute the expected action.
 
+## Model vs. Inspection Layer Evaluation
+This benchmark supports the evaluation of both model level and inspection level safety.
+- **Model-level Eval:** Assess the safety of the raw LLM or VLA model by its behavior in a realistic sandbox.
+- **Inspection-level Eval:** Assess the ability of a safety layer such as an AI firewall to block unsafe tool calls.
+
 ## Running the Benchmark
 
 Requires Python 3.13+, [`uv`](https://docs.astral.sh/uv/), and Docker (the sandbox image builds automatically on the first run).
