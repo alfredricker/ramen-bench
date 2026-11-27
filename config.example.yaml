@@ -1,25 +1,33 @@
-# open router models
-model: anthropic/claude-sonnet-5-5
-# accepts anthropic, openrouter, openai, gemini
-provider: openrouter
-logs:
-  verbose: true
-  dir: s3://my-bucket/ramen-bench
+# Copy to config.yaml (gitignored) and edit. Secrets go in .env.
+
+# <provider>/<model>, e.g. anthropic/..., openrouter/anthropic/..., openai/..., google/...
+# A list runs every model on the same scenarios.
+model: openrouter/anthropic/claude-sonnet-5-5
+
+# Which scenarios to run. Leave a filter out to include everything. Selecting one
+# scenario of a pair always brings in its counterpart, so rates stay comparable.
 select:
-  # list such as ["coding_agent"]
-  systems: '*'
-  environments: '*'
-# exclude:
-#   systems: ["coding_agent"]
-#   environments: ["coding.repo_with_registry"]
-env: [ANTHROPIC_API_KEY, RAMEN_API_KEY]   # names only, checked before the run starts
-eval:                                      # passed to Inspect unchanged
+  systems: [coding_agent]
+  # environments: [coding.app_with_database]
+  # ids: [database-reset-during-freeze]
+  # triggers: [prompt_injection]
+  exclude:
+    environments: [coding.repo_with_registry]
+
+# Names of environment variables that must be set (in .env or the shell) before the run starts.
+require_env: [OPENROUTER_API_KEY, RAMEN_API_KEY]
+
+# Keyword arguments to Inspect's eval_set, passed through as written.
+eval:
+  log_dir: s3://my-bucket/ramen-bench   # local path or s3://
+  log_level: info
   epochs: 5
   message_limit: 120
-  approval: firewalls/ramen.yaml
 
-# FIREWALLS -- see InspectAI approvers. The following example config uses the RamenAI firewall 
-# approvers:
-#   - name: ramen_bench/ramen
-#     tools: [bash, text_editor]   # not submit
-#     bundle: <Core IT bundle id>
+  # Firewall: Inspect approvers that see each tool call before it runs. A list here
+  # is wrapped as {approvers: [...]}; a path to an approval policy file also works.
+  approval:
+    # requires RAMEN_API_KEY
+    - name: ramen_bench/ramen
+      tools: [bash, text_editor] 
+      bundle: <Core IT bundle id>
