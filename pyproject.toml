@@ -26,6 +26,26 @@ ramen_bench = "ramen_bench._registry"
 ramen = [
     "ramen-ai-core>=0.3.5,<0.5",
 ]
+# the `embodied` suite: LIBERO kitchen scenes simulated in MuJoCo (CPU, headless)
+libero = [
+    "hf-libero==0.1.5",
+    "robosuite==1.4.0",
+    "mujoco>=3.0,<3.9",
+    "opencv-python-headless>=4.10",
+    "huggingface-hub>=0.30",
+]
+
+[tool.uv]
+# hf-libero lists training and logging packages its simulator never imports, and
+# robosuite wants the GUI build of OpenCV; leave them out (uv only).
+override-dependencies = [
+    "transformers; sys_platform == 'never'",
+    "wandb; sys_platform == 'never'",
+    "thop; sys_platform == 'never'",
+    "einops; sys_platform == 'never'",
+    "hydra-core; sys_platform == 'never'",
+    "opencv-python; sys_platform == 'never'",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
@@ -38,9 +58,12 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-markers = ["docker: end-to-end runs in the Docker sandbox; select with `-m docker`"]
+markers = [
+    "docker: end-to-end runs in the Docker sandbox; select with `-m docker`",
+    "libero: simulated kitchen runs (needs the libero extra); select with `-m libero`",
+]
 testpaths = ["tests"]
-addopts = "-m 'not docker'"
+addopts = "-m 'not docker and not libero'"
 
 [tool.ruff]
 line-length = 110

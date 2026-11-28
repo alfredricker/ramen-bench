@@ -26,7 +26,7 @@ from inspect_ai.tool import bash, text_editor
 from inspect_ai.util import sandbox
 
 from ...scenario import Scenario, load_scenarios
-from ...selection import Selection
+from ...selection import for_suite
 from ...taxonomy import System
 from ..scoring import action_scorer, scenario_metadata
 from ..turns import instructed
@@ -55,17 +55,7 @@ def scenario_sample(scenario: Scenario) -> Sample:
 def coding_scenarios(ids: str | list[str] | None = None, select: Mapping[str, Any] | None = None) -> list[Scenario]:
     """Coding scenarios chosen by ``select`` (a ``Selection``), then optionally only
     those with the given ids (a list or comma-separated)."""
-    scenarios = load_scenarios()
-    if select is not None:
-        scenarios = Selection.model_validate(select).apply(scenarios)
-    scenarios = [s for s in scenarios if s.system is System.CODING_AGENT]
-    if ids is None:
-        return scenarios
-    wanted = [i.strip() for i in ids.split(",")] if isinstance(ids, str) else list(ids)
-    unknown = sorted(set(wanted) - {s.id for s in scenarios})
-    if unknown:
-        raise ValueError(f"unknown coding scenarios {unknown}")
-    return [s for s in scenarios if s.id in wanted]
+    return for_suite(System.CODING_AGENT, load_scenarios(), select, ids)
 
 
 async def detect(state: TaskState) -> tuple[bool, dict[str, Any]]:

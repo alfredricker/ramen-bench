@@ -91,8 +91,9 @@ def load_config(path: str | Path) -> RunConfig:
 def suites() -> dict[System, Callable[..., Task]]:
     """The Inspect task that runs each system's scenarios."""
     from .harness.coding.task import coding
+    from .harness.embodied.task import embodied
 
-    return {System.CODING_AGENT: coding}
+    return {System.CODING_AGENT: coding, System.EMBODIED: embodied}
 
 
 def plan(config: RunConfig, scenarios: Sequence[Scenario] | None = None) -> dict[System, list[Scenario]]:

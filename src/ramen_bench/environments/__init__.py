@@ -6,11 +6,12 @@ To add one, declare it in the module for its system and list it in ``_ALL``.
 from __future__ import annotations
 
 from ..environment import Environment
-from . import coding
+from . import coding, embodied
 
 _ALL: tuple[Environment, ...] = (
     coding.APP_WITH_DATABASE,
     coding.REPO_WITH_REGISTRY,
+    embodied.KITCHEN,
 )
 
 ENVIRONMENTS: dict[str, Environment] = {}

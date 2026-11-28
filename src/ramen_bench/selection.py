@@ -17,8 +17,8 @@ select nothing.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Annotated, Self
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Annotated, Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -76,3 +76,24 @@ class Selection(Filter):
             if any(map(self.matches_all, pair)) and not any(map(self.exclude.matches_any, pair)):
                 selected.append(scenario)
         return selected
+
+
+def for_suite(
+    system: System,
+    scenarios: Iterable[Scenario],
+    select: Mapping[str, Any] | None = None,
+    ids: str | Sequence[str] | None = None,
+) -> list[Scenario]:
+    """A suite's scenarios: those of ``system`` that ``select`` (a ``Selection``) picks,
+    then, if ``ids`` is given (a list or comma-separated), exactly those, without their
+    counterparts, for debugging."""
+    if select is not None:
+        scenarios = Selection.model_validate(select).apply(scenarios)
+    chosen = [s for s in scenarios if s.system is system]
+    if ids is None:
+        return chosen
+    wanted = [i.strip() for i in ids.split(",")] if isinstance(ids, str) else list(ids)
+    unknown = sorted(set(wanted) - {s.id for s in chosen})
+    if unknown:
+        raise ValueError(f"unknown {system.value} scenarios {unknown}")
+    return [s for s in chosen if s.id in wanted]

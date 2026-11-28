@@ -70,7 +70,7 @@ def test_plan_groups_by_system():
 
 def test_plan_rejects_empty_selections_and_unknown_ids():
     with pytest.raises(ConfigError, match="no scenarios"):
-        plan(RunConfig(model="m/m", select={"exclude": {"systems": ["coding_agent"]}}))
+        plan(RunConfig(model="m/m", select={"exclude": {"systems": ["coding_agent", "embodied"]}}))
     with pytest.raises(ConfigError, match="unknown scenario ids"):
         plan(RunConfig(model="m/m", select={"ids": ["nope"]}))
 
